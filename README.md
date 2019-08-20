@@ -266,4 +266,58 @@ Phần hiển thị đã xong, bây giờ cần làm API nữa:
 - GET /bird - phương thức này dùng để lấy dữ liệu trong database trả về để hiển thị lên danh sách
 - POST /bird - phương thức này sẽ thêm mới 1 loại chim vào danh sách có sẵn
 
-Tạo mới một file bird_handles.go cùng cấp với file main.go bên trên
+Tạo mới một file bird_handles.go cùng cấp với file main.go bên trên. Trước tiên chúng ta khai báo 1 cấu trúc struct và một biến bird như sau
+
+```
+type Bird struct {
+	Species     string `json:"species"`
+	Description string `json:"description"`
+}
+
+var birds []Bird
+```
+Tiếp theo, khai báo phương thức để lấy tất cả bird có trong cơ sở dữ liệu
+
+```
+func getBirdHandler(w http.ResponseWriter, r *http.Request) {
+	birdListBytes, err := json.Marshal(birds)
+
+	if err != nil {
+		fmt.Println(fmt.Errorf("Error: %v", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Write(birdListBytes)
+}
+```
+Tiếp tục với việc lưu một loài chim mới
+
+```
+func createBirdHandler(w http.ResponseWriter, r *http.Request) {
+	bird := Bird{}
+
+	err := r.ParseForm()
+
+	if err != nil {
+		fmt.Println(fmt.Errorf("Error: %v", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	bird.Species = r.Form.Get("species")
+	bird.Description = r.Form.Get("description")
+
+	birds = append(birds, bird)
+
+	http.Redirect(w, r, "/assets/", http.StatusFound)
+}
+```
+Cuối cùng, là định nghĩa route cho 2 phương thức trên
+
+```
+	// These lines are added inside the newRouter() function before returning r
+	r.HandleFunc("/bird", getBirdHandler).Methods("GET")
+	r.HandleFunc("/bird", createBirdHandler).Methods("POST")
+	return r
+```
+Giờ bạn có thể reload lại trình duy
